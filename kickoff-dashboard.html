@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KickOff Arena — Admin Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --green: #00E676;
+  --green-dim: rgba(0,230,118,0.15);
+  --green-border: rgba(0,230,118,0.25);
+  --black: #080808;
+  --dark: #101010;
+  --card: #161616;
+  --card2: #1c1c1c;
+  --border: #242424;
+  --text: #F0F0F0;
+  --muted: #666;
+  --muted2: #999;
+  --red: #FF5252;
+  --amber: #FFB300;
+  --blue: #448AFF;
+  --sidebar: 240px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--black); color:var(--text); font-family:'DM Sans',sans-serif; min-height:100vh; display:flex; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: var(--sidebar);
+  background: var(--dark);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  position: fixed; top:0; left:0; bottom:0;
+  z-index: 100;
+  transition: transform 0.3s;
+}
+.sidebar-logo {
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.logo-row { display:flex; align-items:center; gap:10px; }
+.logo-ball {
+  width:38px; height:38px;
+  background: var(--green);
+  border-radius:10px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px;
+  box-shadow: 0 0 16px rgba(0,230,118,0.35);
+  flex-shrink:0;
+}
+.logo-text { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:1.5px; line-height:1; }
+.logo-sub { font-size:10px; color:var(--green); letter-spacing:2px; font-weight:600; }
+
+.nav { padding:16px 0; flex:1; }
+.nav-label { font-size:10px; font-weight:700; letter-spacing:3px; color:var(--muted); padding:12px 20px 6px; text-transform:uppercase; }
+.nav-item {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 20px;
+  font-size:13px; font-weight:500; color:var(--muted2);
+  cursor:pointer; transition:all 0.15s;
+  border-left:3px solid transparent;
+}
+.nav-item:hover { color:var(--text); background:rgba(255,255,255,0.03); }
+.nav-item.active { color:var(--green); border-left-color:var(--green); background:var(--green-dim); }
+.nav-icon { font-size:16px; width:20px; text-align:center; }
+
+.sidebar-footer {
+  padding:16px 20px;
+  border-top:1px solid var(--border);
+  font-size:11px; color:var(--muted);
+}
+.online-dot { width:6px; height:6px; background:var(--green); border-radius:50%; display:inline-block; margin-right:6px; box-shadow:0 0 6px var(--green); }
+
+/* ── MAIN ── */
+.main {
+  margin-left: var(--sidebar);
+  flex:1; min-height:100vh;
+  display:flex; flex-direction:column;
+}
+
+/* TOP BAR */
+.topbar {
+  background:var(--dark);
+  border-bottom:1px solid var(--border);
+  padding:14px 28px;
+  display:flex; align-items:center; justify-content:space-between;
+  position:sticky; top:0; z-index:50;
+}
+.topbar-left { display:flex; align-items:center; gap:12px; }
+.page-title { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:2px; }
+.live-badge {
+  display:flex; align-items:center; gap:5px;
+  background:rgba(0,230,118,0.1); border:1px solid var(--green-border);
+  border-radius:20px; padding:3px 10px;
+  font-size:11px; font-weight:600; color:var(--green);
+}
+.pulse { width:6px; height:6px; background:var(--green); border-radius:50%; animation:pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.8)} }
+
+.topbar-right { display:flex; align-items:center; gap:12px; }
+.date-filter {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:8px; padding:7px 12px;
+  font-family:'DM Sans',sans-serif; font-size:12px; color:var(--text);
+  cursor:pointer;
+}
+.export-btn {
+  background:var(--green); border:none; border-radius:8px;
+  color:#000; font-family:'DM Sans',sans-serif;
+  font-size:12px; font-weight:700;
+  padding:8px 16px; cursor:pointer;
+  display:flex; align-items:center; gap:6px;
+  transition:all 0.2s;
+}
+.export-btn:hover { background:#00C853; transform:translateY(-1px); }
+
+.hamburger { display:none; background:none; border:none; color:var(--text); font-size:20px; cursor:pointer; }
+
+/* ── CONTENT ── */
+.content { padding:24px 28px; flex:1; }
+
+/* STAT CARDS */
+.stats-grid {
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:16px; margin-bottom:24px;
+}
+.stat-card {
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:16px; padding:20px;
+  position:relative; overflow:hidden;
+  transition:border-color 0.2s;
+}
+.stat-card:hover { border-color:rgba(255,255,255,0.1); }
+.stat-card::before {
+  content:'';
+  position:absolute; top:0; left:0; right:0; height:2px;
+}
+.stat-card.green::before { background:var(--green); }
+.stat-card.red::before { background:var(--red); }
+.stat-card.amber::before { background:var(--amber); }
+.stat-card.blue::before { background:var(--blue); }
+
+.stat-icon { font-size:24px; margin-bottom:12px; }
+.stat-label { font-size:11px; font-weight:600; letter-spacing:2px; color:var(--muted); text-transform:uppercase; margin-bottom:6px; }
+.stat-value { font-family:'Bebas Neue',sans-serif; font-size:32px; letter-spacing:1px; line-height:1; }
+.stat-value.green { color:var(--green); }
+.stat-value.red { color:var(--red); }
+.stat-value.amber { color:var(--amber); }
+.stat-value.blue { color:var(--blue); }
+.stat-change { font-size:11px; color:var(--muted); margin-top:4px; }
+.stat-change.up { color:#69F0AE; }
+.stat-change.down { color:var(--red); }
+
+/* CHARTS ROW */
+.charts-row { display:grid; grid-template-columns:2fr 1fr; gap:16px; margin-bottom:24px; }
+
+.chart-card {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:16px; padding:20px;
+}
+.chart-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.chart-title { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:1.5px; }
+.chart-tabs { display:flex; gap:4px; }
+.chart-tab {
+  background:var(--card2); border:1px solid var(--border);
+  border-radius:6px; padding:4px 10px;
+  font-size:11px; font-weight:600; color:var(--muted);
+  cursor:pointer; transition:all 0.15s;
+}
+.chart-tab.active { background:var(--green-dim); border-color:var(--green-border); color:var(--green); }
+
+canvas { max-height:200px; }
+
+/* TOP ITEMS */
+.item-row {
+  display:flex; align-items:center; gap:12px;
+  padding:10px 0; border-bottom:1px solid var(--border);
+}
+.item-row:last-child { border:none; }
+.item-rank {
+  width:24px; height:24px; border-radius:6px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:700; flex-shrink:0;
+}
+.item-rank.r1 { background:rgba(255,179,0,0.15); color:var(--amber); }
+.item-rank.r2 { background:rgba(176,176,176,0.1); color:#aaa; }
+.item-rank.r3 { background:rgba(205,127,50,0.1); color:#cd7f32; }
+.item-rank.r4 { background:var(--card2); color:var(--muted); }
+.item-rank.r5 { background:var(--card2); color:var(--muted); }
+
+.item-emoji { font-size:20px; }
+.item-info { flex:1; }
+.item-name { font-size:13px; font-weight:600; }
+.item-orders { font-size:11px; color:var(--muted); }
+.item-bar-wrap { width:80px; }
+.item-bar { height:4px; background:var(--border); border-radius:2px; overflow:hidden; }
+.item-bar-fill { height:100%; background:var(--green); border-radius:2px; }
+.item-revenue { font-size:13px; font-weight:700; color:var(--green); min-width:70px; text-align:right; }
+
+/* BOTTOM ROW */
+.bottom-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px; }
+
+/* TABLE HEATMAP */
+.table-grid-heat {
+  display:grid; grid-template-columns:repeat(5,1fr); gap:8px;
+  margin-top:12px;
+}
+.table-cell {
+  aspect-ratio:1; border-radius:10px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  font-size:11px; font-weight:700; cursor:default;
+  border:1px solid var(--border);
+}
+.table-cell .tnum { font-family:'Bebas Neue',sans-serif; font-size:18px; }
+.table-cell .tord { font-size:9px; font-weight:500; margin-top:1px; }
+.heat-0 { background:#111; color:var(--muted); }
+.heat-1 { background:rgba(0,230,118,0.08); color:#69F0AE; border-color:rgba(0,230,118,0.15); }
+.heat-2 { background:rgba(0,230,118,0.18); color:#00E676; border-color:rgba(0,230,118,0.3); }
+.heat-3 { background:rgba(0,230,118,0.32); color:#00E676; border-color:rgba(0,230,118,0.5); box-shadow:0 0 10px rgba(0,230,118,0.15); }
+.heat-4 { background:rgba(0,230,118,0.5); color:#000; border-color:var(--green); box-shadow:0 0 14px rgba(0,230,118,0.25); }
+
+/* ORDERS TABLE */
+.orders-section { margin-bottom:24px; }
+.section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.section-title { font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:1.5px; }
+
+.filters { display:flex; gap:8px; flex-wrap:wrap; }
+.filter-input {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:8px; padding:7px 12px;
+  font-family:'DM Sans',sans-serif; font-size:12px; color:var(--text);
+  outline:none;
+}
+.filter-input:focus { border-color:var(--green-border); }
+.filter-select {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:8px; padding:7px 12px;
+  font-family:'DM Sans',sans-serif; font-size:12px; color:var(--text);
+  cursor:pointer; outline:none;
+}
+
+.orders-table { width:100%; border-collapse:collapse; }
+.orders-table th {
+  text-align:left; font-size:10px; font-weight:700;
+  letter-spacing:2px; color:var(--muted); text-transform:uppercase;
+  padding:10px 14px; border-bottom:1px solid var(--border);
+  background:var(--card);
+}
+.orders-table td {
+  padding:12px 14px; font-size:13px;
+  border-bottom:1px solid var(--border);
+}
+.orders-table tr:hover td { background:rgba(255,255,255,0.02); }
+.orders-table tr:last-child td { border:none; }
+
+.status-badge {
+  display:inline-flex; align-items:center; gap:5px;
+  border-radius:20px; padding:3px 10px;
+  font-size:11px; font-weight:600;
+}
+.status-badge.done { background:rgba(0,230,118,0.1); color:var(--green); }
+.status-badge.pending { background:rgba(255,179,0,0.1); color:var(--amber); }
+.status-badge.preparing { background:rgba(68,138,255,0.1); color:var(--blue); }
+
+.table-wrap {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:16px; overflow:hidden;
+}
+
+/* MOBILE OVERLAY */
+.overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:99; }
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px) {
+  .stats-grid { grid-template-columns:repeat(2,1fr); }
+  .charts-row { grid-template-columns:1fr; }
+  .bottom-row { grid-template-columns:1fr; }
+}
+
+@media(max-width:640px) {
+  .sidebar { transform:translateX(-100%); }
+  .sidebar.open { transform:translateX(0); }
+  .overlay.open { display:block; }
+  .main { margin-left:0; }
+  .hamburger { display:block; }
+  .stats-grid { grid-template-columns:repeat(2,1fr); gap:10px; }
+  .content { padding:16px; }
+  .topbar { padding:12px 16px; }
+  .export-btn span { display:none; }
+  .chart-tabs { display:none; }
+}
+</style>
+</head>
+<body>
+
+<!-- OVERLAY (mobile) -->
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-row">
+      <div class="logo-ball">⚽</div>
+      <div>
+        <div class="logo-text">KickOff Arena</div>
+        <div class="logo-sub">Admin Panel</div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <div class="nav-label">Main</div>
+    <div class="nav-item active"><span class="nav-icon">📊</span> Dashboard</div>
+    <div class="nav-item"><span class="nav-icon">🧾</span> All Orders</div>
+    <div class="nav-item"><span class="nav-icon">🍟</span> Menu Items</div>
+    <div class="nav-item"><span class="nav-icon">🪑</span> Tables</div>
+
+    <div class="nav-label">Reports</div>
+    <div class="nav-item"><span class="nav-icon">💰</span> Revenue</div>
+    <div class="nav-item"><span class="nav-icon">📈</span> Analytics</div>
+    <div class="nav-item"><span class="nav-icon">📤</span> Export</div>
+
+    <div class="nav-label">Settings</div>
+    <div class="nav-item"><span class="nav-icon">⚙️</span> Settings</div>
+    <div class="nav-item"><span class="nav-icon">👥</span> Staff Access</div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <span class="online-dot"></span> System Online
+    <div style="margin-top:4px; font-size:10px;">v1.0 · thekickoffarena.com</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" onclick="toggleSidebar()">☰</button>
+      <div class="page-title">Dashboard</div>
+      <div class="live-badge"><div class="pulse"></div> LIVE</div>
+    </div>
+    <div class="topbar-right">
+      <select class="date-filter" onchange="filterByDate(this.value)">
+        <option value="today">Today</option>
+        <option value="week">This Week</option>
+        <option value="month" selected>This Month</option>
+        <option value="all">All Time</option>
+      </select>
+      <button class="export-btn" onclick="exportToExcel()">
+        📥 <span>Export Excel</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- STAT CARDS -->
+    <div class="stats-grid">
+      <div class="stat-card green">
+        <div class="stat-icon">💰</div>
+        <div class="stat-label">Total Revenue</div>
+        <div class="stat-value green" id="stat-revenue">Rs. 0</div>
+        <div class="stat-change up" id="stat-revenue-change">↑ Loading...</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="stat-icon">🧾</div>
+        <div class="stat-label">Total Orders</div>
+        <div class="stat-value amber" id="stat-orders">0</div>
+        <div class="stat-change up" id="stat-orders-change">↑ Loading...</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-icon">🍽️</div>
+        <div class="stat-label">Items Sold</div>
+        <div class="stat-value blue" id="stat-items">0</div>
+        <div class="stat-change up" id="stat-items-change">↑ Loading...</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-icon">📊</div>
+        <div class="stat-label">Avg Order Value</div>
+        <div class="stat-value red" id="stat-avg">Rs. 0</div>
+        <div class="stat-change" id="stat-avg-change">Per order</div>
+      </div>
+    </div>
+
+    <!-- CHARTS ROW -->
+    <div class="charts-row">
+      <!-- Revenue Chart -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Revenue Overview</div>
+          <div class="chart-tabs">
+            <div class="chart-tab" onclick="switchChart('daily',this)">Daily</div>
+            <div class="chart-tab active" onclick="switchChart('weekly',this)">Weekly</div>
+            <div class="chart-tab" onclick="switchChart('monthly',this)">Monthly</div>
+          </div>
+        </div>
+        <canvas id="revenueChart"></canvas>
+      </div>
+
+      <!-- Top Items -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Top Items</div>
+        </div>
+        <div id="topItemsList"></div>
+      </div>
+    </div>
+
+    <!-- BOTTOM ROW -->
+    <div class="bottom-row">
+      <!-- Table Heatmap -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Table Activity</div>
+          <div style="font-size:11px;color:var(--muted)">Darker = More Orders</div>
+        </div>
+        <div class="table-grid-heat" id="tableHeatmap"></div>
+      </div>
+
+      <!-- Item Breakdown Chart -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Sales Breakdown</div>
+        </div>
+        <canvas id="itemChart" style="max-height:220px"></canvas>
+      </div>
+    </div>
+
+    <!-- ORDERS TABLE -->
+    <div class="orders-section">
+      <div class="section-header">
+        <div class="section-title">Recent Orders</div>
+        <div class="filters">
+          <input class="filter-input" type="text" placeholder="🔍 Search..." oninput="filterOrders()" id="searchInput">
+          <select class="filter-select" onchange="filterOrders()" id="statusFilter">
+            <option value="">All Status</option>
+            <option value="Done">Done</option>
+            <option value="Preparing">Preparing</option>
+            <option value="Pending">Pending</option>
+          </select>
+          <select class="filter-select" onchange="filterOrders()" id="tableFilter">
+            <option value="">All Tables</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="orders-table" id="ordersTable">
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Table</th>
+              <th>Items</th>
+              <th>Total</th>
+              <th>Time</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="ordersBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+// ── DEMO DATA ──
+const MENU_ITEMS = {
+  'Coca-Cola': { price: 120, emoji: '🥤' },
+  'Smoothie':  { price: 250, emoji: '🍓' },
+  'Club Sandwich': { price: 350, emoji: '🥪' },
+  'Crispy Fries':  { price: 180, emoji: '🍟' },
+  'Coffee':        { price: 200, emoji: '☕' }
+};
+
+function randomItem() {
+  const keys = Object.keys(MENU_ITEMS);
+  return keys[Math.floor(Math.random() * keys.length)];
+}
+function randomItems() {
+  const count = Math.floor(Math.random()*3)+1;
+  const items = {};
+  for(let i=0;i<count;i++){
+    const item = randomItem();
+    items[item] = (items[item]||0) + (Math.floor(Math.random()*2)+1);
+  }
+  return items;
+}
+function calcTotal(items) {
+  return Object.entries(items).reduce((s,[k,v])=>s+MENU_ITEMS[k].price*v,0);
+}
+function randomTime(hoursAgo) {
+  const d = new Date();
+  d.setHours(d.getHours()-Math.floor(Math.random()*hoursAgo));
+  d.setMinutes(Math.floor(Math.random()*60));
+  return d;
+}
+function fmtTime(d) {
+  return d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+}
+function fmtDate(d) {
+  return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
+}
+
+const STATUSES = ['Done','Done','Done','Preparing','Pending'];
+const allOrders = [];
+for(let i=1;i<=40;i++){
+  const items = randomItems();
+  const table = Math.floor(Math.random()*20)+1;
+  const time = randomTime(72);
+  allOrders.push({
+    id: `KOA-${String(i).padStart(3,'0')}`,
+    table, items,
+    total: calcTotal(items),
+    time,
+    status: STATUSES[Math.floor(Math.random()*STATUSES.length)]
+  });
+}
+allOrders.sort((a,b)=>b.time-a.time);
+
+// Populate table filter
+const tableFilter = document.getElementById('tableFilter');
+const tables = [...new Set(allOrders.map(o=>o.table))].sort((a,b)=>a-b);
+tables.forEach(t=>{
+  const o=document.createElement('option');
+  o.value=t; o.textContent=`Table ${t}`;
+  tableFilter.appendChild(o);
+});
+
+// ── STATS ──
+function updateStats(orders) {
+  const revenue = orders.reduce((s,o)=>s+o.total,0);
+  const items = orders.reduce((s,o)=>s+Object.values(o.items).reduce((a,b)=>a+b,0),0);
+  const avg = orders.length ? Math.round(revenue/orders.length) : 0;
+  document.getElementById('stat-revenue').textContent = `Rs. ${revenue.toLocaleString()}`;
+  document.getElementById('stat-orders').textContent = orders.length;
+  document.getElementById('stat-items').textContent = items;
+  document.getElementById('stat-avg').textContent = `Rs. ${avg}`;
+  document.getElementById('stat-revenue-change').textContent = `↑ +12% vs last period`;
+  document.getElementById('stat-orders-change').textContent = `↑ +8% vs last period`;
+  document.getElementById('stat-items-change').textContent = `↑ +15% vs last period`;
+}
+
+// ── TOP ITEMS ──
+function updateTopItems(orders) {
+  const counts = {}, revenues = {};
+  orders.forEach(o=>{
+    Object.entries(o.items).forEach(([k,v])=>{
+      counts[k]=(counts[k]||0)+v;
+      revenues[k]=(revenues[k]||0)+MENU_ITEMS[k].price*v;
+    });
+  });
+  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  const max = sorted[0]?.[1]||1;
+  const rankClasses=['r1','r2','r3','r4','r5'];
+  const html = sorted.map(([name,qty],i)=>`
+    <div class="item-row">
+      <div class="item-rank ${rankClasses[i]||'r4'}">${i+1}</div>
+      <div class="item-emoji">${MENU_ITEMS[name].emoji}</div>
+      <div class="item-info">
+        <div class="item-name">${name}</div>
+        <div class="item-orders">${qty} orders</div>
+      </div>
+      <div class="item-bar-wrap">
+        <div class="item-bar"><div class="item-bar-fill" style="width:${Math.round(qty/max*100)}%"></div></div>
+      </div>
+      <div class="item-revenue">Rs. ${revenues[name].toLocaleString()}</div>
+    </div>
+  `).join('');
+  document.getElementById('topItemsList').innerHTML = html;
+}
+
+// ── TABLE HEATMAP ──
+function updateHeatmap(orders) {
+  const counts = {};
+  orders.forEach(o=>{ counts[o.table]=(counts[o.table]||0)+1; });
+  const max = Math.max(...Object.values(counts),1);
+  let html='';
+  for(let i=1;i<=20;i++){
+    const c=counts[i]||0;
+    const heat = c===0?0:c<max*0.25?1:c<max*0.5?2:c<max*0.75?3:4;
+    html+=`<div class="table-cell heat-${heat}"><div class="tnum">${i}</div><div class="tord">${c} orders</div></div>`;
+  }
+  document.getElementById('tableHeatmap').innerHTML=html;
+}
+
+// ── CHARTS ──
+let revenueChart, itemChart;
+
+function buildRevenueChart(orders) {
+  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const data=days.map(()=>Math.floor(Math.random()*3000)+500);
+  const ctx=document.getElementById('revenueChart').getContext('2d');
+  if(revenueChart) revenueChart.destroy();
+  revenueChart=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:days,
+      datasets:[{
+        label:'Revenue (Rs.)',
+        data,
+        backgroundColor:'rgba(0,230,118,0.2)',
+        borderColor:'#00E676',
+        borderWidth:1.5,
+        borderRadius:6,
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{ legend:{display:false} },
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#666',font:{size:11}}},
+        y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#666',font:{size:11},callback:v=>'Rs.'+v}}
+      }
+    }
+  });
+}
+
+function buildItemChart(orders) {
+  const counts={};
+  orders.forEach(o=>{Object.entries(o.items).forEach(([k,v])=>{counts[k]=(counts[k]||0)+v;});});
+  const labels=Object.keys(counts);
+  const data=Object.values(counts);
+  const colors=['rgba(0,230,118,0.8)','rgba(255,179,0,0.8)','rgba(68,138,255,0.8)','rgba(255,82,82,0.8)','rgba(179,136,255,0.8)'];
+  const ctx=document.getElementById('itemChart').getContext('2d');
+  if(itemChart) itemChart.destroy();
+  itemChart=new Chart(ctx,{
+    type:'doughnut',
+    data:{
+      labels,
+      datasets:[{data,backgroundColor:colors,borderColor:'#161616',borderWidth:3}]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{position:'bottom',labels:{color:'#999',font:{size:11},padding:12}},
+      },
+      cutout:'65%'
+    }
+  });
+}
+
+function switchChart(type,btn) {
+  document.querySelectorAll('.chart-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  buildRevenueChart(allOrders);
+}
+
+// ── ORDERS TABLE ──
+function renderOrders(orders) {
+  const body=document.getElementById('ordersBody');
+  if(!orders.length){
+    body.innerHTML=`<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px">No orders found</td></tr>`;
+    return;
+  }
+  body.innerHTML=orders.slice(0,20).map(o=>{
+    const itemStr=Object.entries(o.items).map(([k,v])=>`${k} x${v}`).join(', ');
+    const statusClass=o.status==='Done'?'done':o.status==='Preparing'?'preparing':'pending';
+    return `<tr>
+      <td style="font-weight:600;color:var(--green)">${o.id}</td>
+      <td><span style="background:var(--card2);border-radius:6px;padding:3px 8px;font-size:12px">T-${o.table}</span></td>
+      <td style="color:var(--muted2);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${itemStr}</td>
+      <td style="font-weight:700">Rs. ${o.total.toLocaleString()}</td>
+      <td style="color:var(--muted);font-size:12px">${fmtDate(o.time)}, ${fmtTime(o.time)}</td>
+      <td><span class="status-badge ${statusClass}">${o.status==='Done'?'✓':o.status==='Preparing'?'⏳':'🔴'} ${o.status}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function filterOrders() {
+  const search=document.getElementById('searchInput').value.toLowerCase();
+  const status=document.getElementById('statusFilter').value;
+  const table=document.getElementById('tableFilter').value;
+  const filtered=allOrders.filter(o=>{
+    const itemStr=Object.keys(o.items).join(' ').toLowerCase();
+    const matchSearch=!search||o.id.toLowerCase().includes(search)||itemStr.includes(search)||`table ${o.table}`.includes(search);
+    const matchStatus=!status||o.status===status;
+    const matchTable=!table||o.table===parseInt(table);
+    return matchSearch&&matchStatus&&matchTable;
+  });
+  renderOrders(filtered);
+}
+
+function filterByDate(val) {
+  const now=new Date();
+  let filtered=allOrders;
+  if(val==='today') filtered=allOrders.filter(o=>o.time.toDateString()===now.toDateString());
+  else if(val==='week') {
+    const weekAgo=new Date(now-7*24*60*60*1000);
+    filtered=allOrders.filter(o=>o.time>=weekAgo);
+  }
+  updateStats(filtered);
+  updateTopItems(filtered);
+  updateHeatmap(filtered);
+  buildRevenueChart(filtered);
+  buildItemChart(filtered);
+  renderOrders(filtered);
+}
+
+// ── EXCEL EXPORT ──
+function exportToExcel() {
+  const rows=[['Order ID','Table','Items','Total (Rs.)','Date','Time','Status']];
+  allOrders.forEach(o=>{
+    const itemStr=Object.entries(o.items).map(([k,v])=>`${k} x${v}`).join('; ');
+    rows.push([o.id,`Table ${o.table}`,itemStr,o.total,fmtDate(o.time),fmtTime(o.time),o.status]);
+  });
+  let csv=rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=`KickOff_Orders_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// ── MOBILE SIDEBAR ──
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+}
+
+// ── INIT ──
+updateStats(allOrders);
+updateTopItems(allOrders);
+updateHeatmap(allOrders);
+buildRevenueChart(allOrders);
+buildItemChart(allOrders);
+renderOrders(allOrders);
+</script>
+</body>
+</html>
